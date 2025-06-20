@@ -17,7 +17,7 @@ test_start_time = 0
 waiting_for_trigger = False
 current_listeners = []
 last_click_time = 0
-CLICK_IGNORE_THRESHOLD = 0.1  # 100ms dianggap sebagai klik otomatis
+CLICK_IGNORE_THRESHOLD = 0.1
 
 config = {
     'click_button': 'left',
@@ -204,26 +204,31 @@ def auto_save_and_restart():
 
 def update_cps_burst_fields():
     mode = config['click_mode']
+    
+    # Clear all widgets first
     for widget in cps_burst_frame.winfo_children():
         widget.grid_forget()
 
     if mode == 'burst':
         cps_label_widget.config(text="Burst click:")
-
+        
+        # Configure grid for burst mode: count | delay label | delay value
+        cps_burst_frame.columnconfigure(0, weight=1, minsize=60)
+        cps_burst_frame.columnconfigure(1, weight=0, minsize=80)
+        cps_burst_frame.columnconfigure(2, weight=1, minsize=60)
+        
         burst_count_spin.grid(row=0, column=0, sticky='ew')
         delay_label.grid(row=0, column=1, padx=(10, 5), sticky='w')
         burst_delay_spin.grid(row=0, column=2, sticky='ew')
-
-        cps_burst_frame.columnconfigure(0, weight=1)
-        cps_burst_frame.columnconfigure(1, weight=0)
-        cps_burst_frame.columnconfigure(2, weight=1)
     else:
         cps_label_widget.config(text="CPS (Clicks/s):")
+        
+        # Configure grid for CPS mode: full width for CPS spinbox
+        cps_burst_frame.columnconfigure(0, weight=1, minsize=200)
+        cps_burst_frame.columnconfigure(1, weight=0, minsize=0)
+        cps_burst_frame.columnconfigure(2, weight=0, minsize=0)
+        
         cps_spin.grid(row=0, column=0, columnspan=3, sticky='ew')
-
-        cps_burst_frame.columnconfigure(0, weight=1)
-        cps_burst_frame.columnconfigure(1, weight=0)
-        cps_burst_frame.columnconfigure(2, weight=0)
 
 def validate_non_negative(var, default=1):
     try:
@@ -241,7 +246,7 @@ def build_ui():
     start_listeners()
 
     root = tk.Tk()
-    root.title("Simple Autoclicker")
+    root.title("py-autoclicker v1.1")
     root.geometry("400x295")
     root.resizable(False, False)
 
@@ -250,8 +255,8 @@ def build_ui():
 
     frm = ttk.Frame(root, padding=15)
     frm.pack(fill="both", expand=True)
-    frm.columnconfigure(0, weight=1)
-    frm.columnconfigure(1, weight=1)
+    frm.columnconfigure(0, weight=0, minsize=120)  # Fixed width for labels
+    frm.columnconfigure(1, weight=1)  # Flexible width for inputs
 
     # Row 0: Click Button
     ttk.Label(frm, text="Click Button:").grid(row=0, column=0, sticky='w', pady=8)
@@ -280,24 +285,20 @@ def build_ui():
     mode_combo.bind('<<ComboboxSelected>>', on_click_mode_change)
     
     # Row 2: CPS / Burst
-    cps_label_widget = ttk.Label(frm, text="CPS (Clicks/s):", width=15, anchor='w')
+    cps_label_widget = ttk.Label(frm, text="CPS (Clicks/s):", anchor='w')
     cps_label_widget.grid(row=2, column=0, sticky='w', pady=9)
 
     cps_burst_frame = ttk.Frame(frm)
     cps_burst_frame.grid(row=2, column=1, sticky='ew', padx=(10, 0))
-    cps_burst_frame.columnconfigure(0, weight=1)
-    cps_burst_frame.columnconfigure(1, weight=0)
-    cps_burst_frame.columnconfigure(2, weight=1)
 
     cps_var = tk.IntVar(value=config['cps'])
     burst_count_var = tk.IntVar(value=config['burst_count'])
     burst_delay_var = tk.IntVar(value=config['burst_delay_ms'])
 
-    cps_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=100, textvariable=cps_var, width=7)
-    burst_count_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=100, textvariable=burst_count_var, width=7)
-    burst_delay_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=1000, textvariable=burst_delay_var, width=7)
+    cps_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=100, textvariable=cps_var, width=10)
+    burst_count_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=100, textvariable=burst_count_var, width=8)
+    burst_delay_spin = ttk.Spinbox(cps_burst_frame, from_=1, to=1000, textvariable=burst_delay_var, width=8)
 
-    global delay_label
     delay_label = ttk.Label(cps_burst_frame, text="Delay (ms):")
 
     def on_cps_change(event=None):
@@ -333,11 +334,12 @@ def build_ui():
         except ValueError:
             burst_delay_var.set(config['burst_delay_ms'])
 
-    burst_count_spin.grid(row=0, column=0, sticky='ew')
+    cps_spin.bind('<FocusOut>', on_cps_change)
+    cps_spin.bind('<Return>', on_cps_change)
+    
     burst_count_spin.bind('<FocusOut>', on_burst_count_change)
     burst_count_spin.bind('<Return>', on_burst_count_change)
 
-    burst_delay_spin.grid(row=0, column=2, sticky='ew')
     burst_delay_spin.bind('<FocusOut>', on_burst_delay_change)
     burst_delay_spin.bind('<Return>', on_burst_delay_change)
 
