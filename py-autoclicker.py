@@ -11,7 +11,7 @@ import webbrowser
 mouse = MouseController()
 clicking = False
 toggle_state = False
-config_file = 'autoclicker_config.json'
+config_file = 'pyautoclicker_config.json'
 test_cps_count = 0
 test_start_time = 0
 waiting_for_trigger = False
